@@ -6,3 +6,12 @@ npm-debug.log
 *.sublime-project
 *.sublime-workspace
 *.nupkg
+.tscache
+.vs
+
+
+/src/*.js
+/src/*.map
+/*.map
+*.map
+obj

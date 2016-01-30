@@ -5,17 +5,42 @@ describe('Application Insights for Angular JS Provider', function(){
 	var $httpBackend;
 	var $log;
 	var $exceptionHandler;
-	beforeEach( module('ApplicationInsightsModule', function(applicationInsightsServiceProvider){
-    	applicationInsightsServiceProvider.configure('1234567890','angularjs-appinsights-unittests', false);
+    var _http;
 
-    }));
 
-	beforeEach(inject(function(applicationInsightsService, $injector) { 
-		_insights = applicationInsightsService;
-		$httpBackend = $injector.get('$httpBackend');
-		$log = $injector.get('$log');
-		$log.reset();
-		$exceptionHandler = $injector.get('$exceptionHandler');
+    beforeEach(module("$$ApplicationInsights-HttpRequestModule", function ($provide) {
+
+        var mockHttp = function() {};
+        mockHttp.prototype.send = function(options, successCallback, errorCallback) {
+            
+            _http(options)
+                .then(function (response) {
+                        // success
+                        successCallback();
+                    },
+                    function (response) {
+                        //failure
+                        errorCallback(0);
+                    });
+        };
+
+
+	    $provide.factory("$$applicationInsightsHttpRequestService", function() { return function() { return new mockHttp(); } });
+	} ));
+
+
+	beforeEach(module('ApplicationInsightsModule', function (applicationInsightsServiceProvider) {
+	    applicationInsightsServiceProvider.configure('1234567890', 'angularjs-appinsights-unittests', false);
+
+	}));
+
+	beforeEach(inject(function (applicationInsightsService, $injector,$http) {
+	    _insights = applicationInsightsService;
+	    $httpBackend = $injector.get('$httpBackend');
+	    $log = $injector.get('$log');
+	    $log.reset();
+	    $exceptionHandler = $injector.get('$exceptionHandler');
+	    _http = $http;
 	}));
  
  	afterEach(function(){
@@ -24,14 +49,14 @@ describe('Application Insights for Angular JS Provider', function(){
       		$httpBackend.verifyNoOutstandingRequest();
  	});
 
-	describe('Configuration Settings', function(){
+	describe('Configuration Settings', function() {
 
 		it('Should remember the configured application name', function(){
-      		expect(_insights.applicationName).toEqual('angularjs-appinsights-unittests');
+      		expect(_insights.options.applicationName).toEqual('angularjs-appinsights-unittests');
     	});
 
     	it('Should remember that automatic pageview tracking is disabled for tests', function(){
-    		expect(_insights.autoPageViewTracking).toEqual(false);
+    		expect(_insights.options.autoPageViewTracking).toEqual(false);
     	});
 	});
 
@@ -45,7 +70,7 @@ describe('Application Insights for Angular JS Provider', function(){
 
 				//expect(data.length).toEqual(1);
 				expect(data.name).toEqual('Microsoft.ApplicationInsights.Pageview');
-				expect(data.data.type).toEqual('Microsoft.ApplicationInsights.PageviewData');
+				expect(data.data.type).toEqual('Microsoft.ApplicationInsights.PageViewData');
 				expect(data.data.item.ver).toEqual(1);
 				expect(data.data.item.url).toEqual('http://www.somewhere.com/sometest/page');
 				expect(data.data.item.properties.testprop).toEqual('testvalue');
